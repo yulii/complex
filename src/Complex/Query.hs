@@ -17,5 +17,3 @@ class Eq a => Field a where
 --
 --instance Field MTagPids where
 --  fieldName _ = "pids"
-
-

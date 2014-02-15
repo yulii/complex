@@ -1,8 +1,9 @@
 module Main (main, spec) where
 
 import Test.Hspec
+import Test.Complex
 
-import Complex.Entity
+import Complex.Show
 
 main :: IO ()
 main = hspec spec
@@ -13,3 +14,9 @@ spec = do
     context "with valid one" $ do
       it "returns the first element of a list" $ do
         head [23 ..] `shouldBe` (23 :: Int)
+
+  describe "SHOW" $ do
+    context "with valid one" $ do
+      it "returns the first element of a list" $ do
+        head [23 ..] `shouldBe` (23 :: Int)
+
