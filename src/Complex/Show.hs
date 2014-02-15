@@ -26,8 +26,26 @@ showTables = do
     table = fromSql . head
 
 
-showColumns = do
+showColumns table = do
   _connect <- connectMySQL defaultConnectInfo
-  _result  <- quickQuery _connect "SHOW COLUMNS FROM t_user" []
+  _result  <- quickQuery _connect ("SHOW COLUMNS FROM " ++ table) []
   return _result
+
+
+
+
+data ColumnDef = ColumnDef
+  { columnType    :: SqlValue
+  , columnNull    :: Bool
+  , columnDefault :: SqlValue }
+
+data ColumnDef = ColumnDef
+  { columnField   :: ByteString
+  , columnType    :: SqlValue
+  , columnNull    :: Bool
+  , columnKey     :: ByteString
+  , columnDefault :: ByteString
+  , columnExtra   :: ByteString }
+  deriving Show 
+
 
