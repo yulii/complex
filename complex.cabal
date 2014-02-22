@@ -17,7 +17,7 @@ cabal-version:       >=1.8
 
 library
   hs-source-dirs:    src
-  exposed-modules:   Complex.Entity
+  exposed-modules:   Complex.Query
   -- other-modules:       
   build-depends:     base        == 4.6.*
                ,     text        >= 0.11       && < 0.12

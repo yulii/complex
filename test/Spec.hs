@@ -4,6 +4,7 @@ import Test.Hspec
 import Test.Complex
 
 import Complex.Show
+import Complex.Query
 
 main :: IO ()
 main = hspec spec
@@ -15,8 +16,12 @@ spec = do
       it "returns the first element of a list" $ do
         head [23 ..] `shouldBe` (23 :: Int)
 
-  describe "SHOW" $ do
+  describe "SELECT" $ do
     context "with valid one" $ do
       it "returns the first element of a list" $ do
-        head [23 ..] `shouldBe` (23 :: Int)
+        select' [ MTagId, MTagPids, MTagName, MTagDescription] `shouldBe` "SELECT"
+        -- ++ from' MTagEntity -- TODO: データ型を作らずに指定できないか？
+        -- ++ where' [ MTagId   .= "2"
+        --          , MTagName .= "KEYWORD"
+        --          ]
 
