@@ -12,6 +12,13 @@ data MTag = MTag { mTagId          :: Word64
                  } deriving (Eq, Show)
 
 instance Entity MTag where
+
+--  data EntityField MTag typ where
+--    MTagId           :: EntityField MTag Word64
+--    MTagPids         :: EntityField MTag (Maybe Text)
+--    MTagName         :: EntityField MTag Text
+--    MTagDescription  :: EntityField MTag Text
+
   entityName _ = "m_tag"
   newEntity = MTag { mTagId   = undefined
                    , mTagPids = undefined
