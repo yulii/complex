@@ -6,23 +6,11 @@ import Data.Text (Text, pack)
 
 import Complex.Query
 
----- ストレージ上のモデルとマッピングするクラス
---class Entity e where
---  data Field e 
---
---  entityName :: e -> String
---  -- Default 制約をインスタンスで定義する
---  -- Default 定義がないフィールドは undefined で、参照時まで評価をされないようにする
---  newEntity :: e
---
---  fieldDef :: Field e -> String
-
 data MTag = MTag { mTagId          :: Word64
                  , mTagPids        :: Maybe Text
                  , mTagName        :: Text
                  , mTagDescription :: Text
                  } deriving (Eq, Show)
-
 
 instance Entity MTag where
   data Field MTag = MTagId | MTagPids | MTagName | MTagDescription
