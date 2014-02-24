@@ -79,13 +79,21 @@ instance SQLClause (SQLCondition a b) where
 
 -- TODO: 以下の節は、SQLClause インスタンスのリストから射影して構築する？
 -- TODO: [SQLClause] の表現で、副問い合わせが記述できるか？？？
-select' ps = (++) " SELECT " $ intercalate ", " $ map (express . fieldDef) ps
+--select' ps = (++) " SELECT " $ intercalate ", " $ map (express . fieldDef) ps
+--from' t = (++) " FROM " $ entityId $ entityDef t
+--where'  cs = (++) " WHERE " $ intercalate " AND " $ map express cs
+
+-- TODO: 別名を振る方法も検討
+select' ps = (++) " SELECT " $ intercalate ", " $ map express ps
 from' t = (++) " FROM " $ entityId $ entityDef t
 where'  cs = (++) " WHERE " $ intercalate " AND " $ map express cs
 
---expressSQL :: SQLClause a => [a] -> [Char] -> [Char]
---expressSQL [] s = s
---expressSQL (x:xs) = x
+expressSQL :: SQLClause a => [a] -> [Char]
+expressSQL clauses = select' projections
+  where
+    projections = filter (isProjection) clauses
+    conditions  = filter (isCondition)  clauses
+    options     = filter (isOption)     clauses
 
 
 -- TODO: 無理矢理感があるので、もう少し記述方法を検討
