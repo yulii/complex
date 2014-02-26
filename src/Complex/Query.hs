@@ -84,16 +84,21 @@ instance SQLClause (SQLCondition a b) where
 --where'  cs = (++) " WHERE " $ intercalate " AND " $ map express cs
 
 -- TODO: 別名を振る方法も検討
-select' ps = (++) " SELECT " $ intercalate ", " $ map express ps
+-- カンマ、AND 演算子で配列をjoin するロジックと、別名を振るロジックを抽象化してまとめられないか？
+select' ps = expressSelect $ map fieldDef ps
 from' t = (++) " FROM " $ entityId $ entityDef t
-where'  cs = (++) " WHERE " $ intercalate " AND " $ map express cs
 
 expressSQL :: SQLClause a => [a] -> [Char]
-expressSQL clauses = select' projections
+expressSQL clauses = expressSelect projections ++ expressWhere conditions
   where
     projections = filter (isProjection) clauses
     conditions  = filter (isCondition)  clauses
     options     = filter (isOption)     clauses
+
+expressSelect :: SQLClause a => [a] -> [Char]
+expressSelect ps = (++) " SELECT " $ intercalate ", "    $ map express ps
+expressWhere  :: SQLClause a => [a] -> [Char]
+expressWhere  cs = (++) " WHERE "  $ intercalate " AND " $ map express cs
 
 
 -- TODO: 無理矢理感があるので、もう少し記述方法を検討
