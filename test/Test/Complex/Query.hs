@@ -1,21 +1,47 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Test.Complex.Query (specComplexQuery) where
 
 import Test.Hspec
 import Test.Data.Entity
 
+import Complex.Entity
 import Complex.Query
 
 specComplexQuery :: Spec
 specComplexQuery = do
-  describe "SELECT" $ do
+  describe "Entity Class" $ do
     context "with valid one" $ do
-      it "returns the first element of a list" $ do
-        projectionField (fieldDef UserId) `shouldBe` "id"
-        -- select' [ MTagId, MTagPids, MTagName, MTagDescription] `shouldBe` "SELECT"
-        -- ++ from' MTagEntity -- TODO: データ型を作らずに指定できないか？
-        -- ++ where' [ MTagId   .= "2"
-        --          , MTagName .= "KEYWORD"
-        --          ]
+      it "returns the table name" $ do
+        entityId (entityDef UserEntity) `shouldBe` "user"
+
+      it "returns the column name" $ do
+        fieldId (fieldDef UserId)        `shouldBe` "id"
+        fieldId (fieldDef UserEmail)     `shouldBe` "email"
+        fieldId (fieldDef UserPassword)  `shouldBe` "password"
+        fieldId (fieldDef UserStatus)    `shouldBe` "status"
+        fieldId (fieldDef UserCreatedAt) `shouldBe` "created_at"
+        fieldId (fieldDef UserUpdatedAt) `shouldBe` "updated_at"
+
       it " list" $ do
-        select' [UserId, UserEmail, UserPassword, UserStatus, UserCreatedAt, UserUpdatedAt] `shouldBe` "id"
+        fields <- return [ UserId, UserEmail, UserPassword, UserStatus, UserCreatedAt, UserUpdatedAt ]
+        select' fields `shouldBe` " SELECT id, email, password, status, created_at, updated_at"
+
+      it "express SQL" $ do
+        join <- return []
+        base <- return SQLBase { baseId = "t1", baseEntity = (entityDef UserEntity), baseJoin = join }
+        ps   <- return [ SQLProjection { projectionId = "c1", projectionField = (fieldDef UserId)        }
+                       , SQLProjection { projectionId = "c2", projectionField = (fieldDef UserEmail)     }
+                       , SQLProjection { projectionId = "c3", projectionField = (fieldDef UserPassword)  }
+                       , SQLProjection { projectionId = "c4", projectionField = (fieldDef UserStatus)    }
+                       , SQLProjection { projectionId = "c5", projectionField = (fieldDef UserCreatedAt) }
+                       , SQLProjection { projectionId = "c6", projectionField = (fieldDef UserUpdatedAt) }
+                       ]
+        cs   <- return []
+        os   <- return []
+        expressSQL base ps cs `shouldBe` " SELECT id, email, password, status, created_at, updated_at"
+
+      it " list" $ do
+        f <- return SQLProjection { projectionId = "c4", projectionField = (fieldDef UserStatus)    }
+        express SQLCondition { conditionField = f, conditionOperation = (.<), conditionValue = "AAA" } `shouldBe` "AA"
+      --  UserEntity >:< [] `shouldBe` " FROM user"
 

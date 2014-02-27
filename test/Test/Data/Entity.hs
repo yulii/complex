@@ -1,11 +1,12 @@
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Test.Data.Entity where
 
-import Data.Word (Word32, Word64)
-import Data.Text (Text, pack)
-import Data.Time (UTCTime)
+import Data.Word             (Word32, Word64)
+import Data.Text             (Text, pack)
+import Data.Time             (UTCTime)
 
-import Complex.Query
+import Complex
 
 data User = User { userId        :: Word32
                  , userEmail     :: [Char]
@@ -16,6 +17,7 @@ data User = User { userId        :: Word32
                  } deriving (Eq, Show)
 
 instance Entity User where
+  data Table User = UserEntity
   data Field User = UserId
                   | UserEmail
                   | UserPassword
@@ -32,13 +34,12 @@ instance Entity User where
                    , userUpdatedAt = undefined
                    }
 
-  entityDef (User _ _ _ _ _ _) = SQLEntity { entityId = "user" }
+  entityDef UserEntity = SQLEntity { entityId = "user" }
 
-  -- TODO: Entity の指定がコレで良いのか？
-  fieldDef UserId        = SQLProjection { projectionEntity = newEntity ,projectionField = "id"         }
-  fieldDef UserEmail     = SQLProjection { projectionEntity = newEntity ,projectionField = "email"      }
-  fieldDef UserPassword  = SQLProjection { projectionEntity = newEntity ,projectionField = "password"   }
-  fieldDef UserStatus    = SQLProjection { projectionEntity = newEntity ,projectionField = "status"     }
-  fieldDef UserCreatedAt = SQLProjection { projectionEntity = newEntity ,projectionField = "created_at" }
-  fieldDef UserUpdatedAt = SQLProjection { projectionEntity = newEntity ,projectionField = "updated_at" }
+  fieldDef UserId        = SQLField { fieldEntity = (entityDef UserEntity) ,fieldId = "id"         }
+  fieldDef UserEmail     = SQLField { fieldEntity = (entityDef UserEntity) ,fieldId = "email"      }
+  fieldDef UserPassword  = SQLField { fieldEntity = (entityDef UserEntity) ,fieldId = "password"   }
+  fieldDef UserStatus    = SQLField { fieldEntity = (entityDef UserEntity) ,fieldId = "status"     }
+  fieldDef UserCreatedAt = SQLField { fieldEntity = (entityDef UserEntity) ,fieldId = "created_at" }
+  fieldDef UserUpdatedAt = SQLField { fieldEntity = (entityDef UserEntity) ,fieldId = "updated_at" }
 

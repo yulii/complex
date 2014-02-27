@@ -1,105 +1,130 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Complex.Query where
+import Complex.Entity
 
-import Data.Word (Word32, Word64)
-import Data.Text (Text, pack)
-import Data.List
+import Data.String           (IsString)
+import Data.ByteString.Char8 (ByteString, append, intercalate)
+import Data.Word             (Word32, Word64)
+import Data.Text             (Text, pack)
+
+--class Show e => SQLType e where
+--  showL :: e -> [Char]
+--
+--instance SQLType [Char] where
+--  showL e = "'" ++ e ++ "'"
+--
+---- TODO: class 指定で一括定義できないか？？
+--instance SQLType Word64 where
+--  showL = show
+
+-- Clause ---------------------------------------------------------------------------
+class SQLClause s where
+  -- 文節の構築式を定義する
+  express :: s -> ByteString
+  isProjection :: s -> Bool -- SELECT 節の判別
+  isCondition  :: s -> Bool -- WHERE 節の判別
+  isOption     :: s -> Bool -- ORDER BY 節, LIMIT 節, OFFSET 節の判別
 
 -- SQLで利用する基本型を定義
-class Show e => SQLType e where
-  showL :: e -> [Char]
+data SQLValue = SQLUnsignedInt    Word32
+              | SQLUnsignedBigInt Word64
+              | SQLVarChar        ByteString
+              deriving (Show, Eq)
 
-instance SQLType [Char] where
-  showL e = "'" ++ e ++ "'"
-
--- TODO: class 指定で一括定義できないか？？
-instance SQLType Word64 where
-  showL = show
-
--- Entity ---------------------------------------------------------------------------
-data SQLEntity = SQLEntity { entityId :: [Char] }
-
-class Entity e where
-  data Field e 
-
-  -- Default 制約をインスタンスで定義する
-  -- Default 定義がないフィールドは undefined で、参照時まで評価をされないようにする
-  newEntity :: e
-
-  entityDef :: e -> SQLEntity
-  fieldDef  :: Field e -> SQLProjection e
-
+instance Num SQLValue where
+instance IsString SQLValue where
 
 -- SQL 文の節を定義
-class SQLClause e where
-  -- 文節の構築式を定義する
-  express :: e -> [Char]
-  -- SELECT 節の判別
-  isProjection :: e -> Bool
-  -- WHERE 節の判別
-  isCondition :: e -> Bool
-  -- ORDER BY 節, LIMIT 節, OFFSET 節の判別
-  isOption :: e -> Bool
 
--- SELECT 節の定義
--- TODO: 別名定義 (AS) の対応 / c1, c2 の連番で設定する？
-data SQLProjection e = SQLProjection { projectionEntity :: e
-                                     , projectionField  :: [Char]
-                                     }
+-- FROM 節
+-- TODO: 別名定義 (AS) の対応 / t1, t2 の連番で設定する？
+data SQLBase = SQLBase { baseId     :: ByteString
+                       , baseEntity :: SQLEntity
+                       , baseJoin   :: [SQLJoin]
+                       }
 
-instance SQLClause (SQLProjection a) where
-  express = projectionField
-  isProjection _ = True
+instance SQLClause SQLBase where
+  express = (append " FROM ") . entityId . baseEntity
+  isProjection _ = False
+  isCondition  _ = False
+  isOption     _ = False
+
+-- JOIN 節の定義
+data SQLJoin = SQLJoin { joinId        :: ByteString
+                       , joinEntity    :: SQLEntity
+                       , joinCondition :: [SQLCondition]
+                       }
+
+instance SQLClause SQLJoin where
+  express = (append " JOIN ") . entityId . joinEntity
+  isProjection _ = False
   isCondition  _ = False
   isOption     _ = False
 
 
--- WHERE 節の定義
-data SQLCondition e c = SQLCondition { conditionField     :: SQLProjection e
-                                     , conditionOperation :: SQLProjection e -> c -> [Char]
-                                     , conditionValue     :: c
-                                     }
+-- SELECT 節の定義
+-- TODO: 別名定義 (AS) の対応 / c1, c2 の連番で設定する？
+data SQLProjection = SQLProjection { projectionId    :: ByteString
+                                   , projectionField :: SQLField
+                                   }
 
-instance SQLClause (SQLCondition a b) where
+instance SQLClause SQLProjection where
+  express = fieldId . projectionField
+  -- express = fieldId . projectionField
+  isProjection _ = True
+  isCondition  _ = False
+  isOption     _ = False
+
+instance SQLClause [SQLProjection] where
+  express = (append " SELECT ") . (intercalate ", ") . (map express)
+  isProjection _ = False
+  isCondition  _ = False
+  isOption     _ = False
+
+-- WHERE 節の定義
+data SQLCondition = SQLCondition { conditionField     :: SQLProjection
+                                 , conditionOperation :: SQLProjection -> SQLValue -> ByteString
+                                 , conditionValue     :: SQLValue
+                                 }
+
+instance SQLClause SQLCondition where
   express e = conditionOperation e (conditionField e) (conditionValue e)
   isProjection _ = False
   isCondition  _ = True
   isOption     _ = False
 
+--expressWhere  :: SQLClause a => [a] -> [Char]
+--expressWhere  cs = (++) " WHERE "  $ intercalate " AND " $ map express cs
 -- <END>
+---------------------------------------------------------------------------
+
+--class QuerySet c where
+--
+--instance QuerySet SQLEntity where
 
 -- SQL 構文の節を構築する
 -- NOT の定義式は？？？
-(.=) :: (Entity e, SQLType c) => Field e -> c -> SQLCondition e c
-(.=) f v = SQLCondition { conditionField = (fieldDef f), conditionOperation = operate, conditionValue = v }
-  where
-    operate :: SQLType a => SQLProjection e -> a -> [Char]
-    operate fn val = (projectionField fn) ++ " = " ++ (showL val)
+(.<) :: SQLProjection -> SQLValue -> ByteString
+(.<) p v = "AAAAA"
 
--- TODO: 以下の節は、SQLClause インスタンスのリストから射影して構築する？
--- TODO: [SQLClause] の表現で、副問い合わせが記述できるか？？？
---select' ps = (++) " SELECT " $ intercalate ", " $ map (express . fieldDef) ps
---from' t = (++) " FROM " $ entityId $ entityDef t
---where'  cs = (++) " WHERE " $ intercalate " AND " $ map express cs
+--(.=) :: (Entity e, SQLType c) => Field e -> c -> SQLCondition e c
+--(.=) f v = SQLCondition { conditionField = (fieldDef f), conditionOperation = operate, conditionValue = v }
+--  where
+--    operate :: SQLType a => SQLProjection e -> a -> [Char]
+--    operate fn val = (projectionField fn) ++ " = " ++ (showL val)
 
 -- TODO: 別名を振る方法も検討
 -- カンマ、AND 演算子で配列をjoin するロジックと、別名を振るロジックを抽象化してまとめられないか？
-select' ps = expressSelect $ map fieldDef ps
-from' t = (++) " FROM " $ entityId $ entityDef t
-
-expressSQL :: SQLClause a => [a] -> [Char]
-expressSQL clauses = expressSelect projections ++ expressWhere conditions
+select' ps = express $ map toProjection ps
   where
-    projections = filter (isProjection) clauses
-    conditions  = filter (isCondition)  clauses
-    options     = filter (isOption)     clauses
+    toProjection f = SQLProjection { projectionId = undefined, projectionField = (fieldDef f) }
+--from'   t  = (++) " FROM " $ entityId $ entityDef t
 
-expressSelect :: SQLClause a => [a] -> [Char]
-expressSelect ps = (++) " SELECT " $ intercalate ", "    $ map express ps
-expressWhere  :: SQLClause a => [a] -> [Char]
-expressWhere  cs = (++) " WHERE "  $ intercalate " AND " $ map express cs
 
+expressSQL :: SQLBase -> [SQLProjection] -> [SQLCondition] -> ByteString
+expressSQL base ps cs = append (express ps) (express base)
 
 -- TODO: 無理矢理感があるので、もう少し記述方法を検討
 -- SLECT 文の節は以下の形で分解する
@@ -115,35 +140,13 @@ expressWhere  cs = (++) " WHERE "  $ intercalate " AND " $ map express cs
 -- TODO: bulk も検討
 -- DELETE 文の節は以下の形で分解する
 
---(>:<) base unions = from' base
---(<:=<) set conditions = set
+-- FROM 節とJOIN 節による基底集合の定義
+(>:<<) :: Entity e => Table e -> [SQLJoin] -> SQLBase
+(>:<<) base join = SQLBase { baseId = undefined, baseEntity = (entityDef base), baseJoin = join }
+(<:=<) set bounds = append (express ps) (express set)
+  where
+    ps = filter (isProjection) bounds
+    cs = filter (isCondition)  bounds
+    os = filter (isOption)     bounds
 
--- サンプル
---SELECT
---  t1.id
---  ,t1.pids
---  ,t1.name
---  ,t1.description
---FROM
---  tags as t1
---WHERE
---  t1.pids IS NULL
---  AND t1.id > 0
---OREDER BY
---  t1.name ASC
---LIMIT
---  0, 10
-
---(SELECT
---  [(FIELD "id"), (FIELD "pids"), (FIELD "name"), (FIELD "description")]
---  (FROM
---    (Table "tags")
---    (WHERE
---      (AND [(IS_NULL (FIELD "pids")), (> (FIELD "id") 0)])
---    )
---  )
---  (ORDER [ASC (FIELD "name")])
---  (LIMIT 0 10)
---)
-  
 
