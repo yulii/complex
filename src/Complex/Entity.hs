@@ -6,7 +6,6 @@ module Complex.Entity
   , FieldModel  (..)
   , Entity      (..)
   , Field       (..)
-  , Literal     (..)
   ) where
 
 import Data.Int              (Int8, Int16, Int32, Int64)
@@ -29,15 +28,6 @@ class Show e => Literal e where
 instance (Show f, Field f) => Literal f where
   express = decodeUtf8 . fieldId . fieldDef
 
-class Entity e where
-  data Table e
-
-  entityDef :: Table e -> EntityModel
-
-class Field f where
-  fieldDef :: f -> FieldModel
-
-
 -- Define the literal of Number
 instance Literal Integer
 instance Literal Int
@@ -52,4 +42,13 @@ instance Literal Word32
 instance Literal Word64
 instance Literal Float
 instance Literal Double
+
+
+class Entity e where
+  data Table e
+
+  entityDef :: Table e -> EntityModel
+
+class Field f where
+  fieldDef :: f -> FieldModel
 

@@ -14,13 +14,13 @@ specComplexQuery = do
       it "returns the table name" $ do
         entityId (entityDef UserRef) `shouldBe` "user"
 
-      it "returns the column name" $ do
-        express UserId        `shouldBe` "id"
-        express UserEmail     `shouldBe` "email"
-        express UserPassword  `shouldBe` "password"
-        express UserStatus    `shouldBe` "status"
-        express UserCreatedAt `shouldBe` "created_at"
-        express UserUpdatedAt `shouldBe` "updated_at"
+      --it "returns the column name" $ do
+      --  express UserId        `shouldBe` "id"
+      --  express UserEmail     `shouldBe` "email"
+      --  express UserPassword  `shouldBe` "password"
+      --  express UserStatus    `shouldBe` "status"
+      --  express UserCreatedAt `shouldBe` "created_at"
+      --  express UserUpdatedAt `shouldBe` "updated_at"
 
       --it " list" $ do
       --  fields <- return [ UserId, UserEmail, UserPassword, UserStatus, UserCreatedAt, UserUpdatedAt ]
